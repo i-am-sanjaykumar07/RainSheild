@@ -8,6 +8,7 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', phone: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const { login, register, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -32,18 +33,20 @@ const Login = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setGoogleLoading(true);
     try {
-      setError('');
       const { data } = await api.post('/auth/google', {
         credential: credentialResponse.credential,
       });
-
       localStorage.setItem('token', data.token);
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      updateUser(data.user);
+      updateUser(data.user); // immediately populate context
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Google login failed.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -139,16 +142,23 @@ const Login = () => {
 
         {/* Google Login */}
         <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setError('Google login failed. Please try again.')}
-            useOneTap
-            theme="outline"
-            size="large"
-            text="continue_with"
-            shape="rectangular"
-            width="340"
-          />
+          {googleLoading ? (
+            <div className="flex items-center gap-3 px-6 py-3 rounded-xl border border-surface-200 bg-surface-50 w-full justify-center">
+              <span className="spinner !w-4 !h-4 !border-2 !border-surface-300 !border-t-surface-700" />
+              <span className="text-sm text-surface-600 font-medium">Signing in with Google...</span>
+            </div>
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google login failed. Please try again.')}
+              useOneTap
+              theme="outline"
+              size="large"
+              text="continue_with"
+              shape="rectangular"
+              width="340"
+            />
+          )}
         </div>
 
         {/* Toggle */}

@@ -47,6 +47,11 @@ app.use('/api/umbrellas', umbrellaRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/rentals', rentalRoutes);
 
+// Keep-alive: pinged every 5 min by UptimeRobot to prevent Railway cold starts
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
