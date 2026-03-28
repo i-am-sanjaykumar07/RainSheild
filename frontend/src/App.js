@@ -62,12 +62,14 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-// Add as many admin emails as needed
-const MERCHANT_EMAILS = ['palisettysanjaykumar@gmail.com'];
+// Admin route protection
 function MerchantRoute({ children }) {
   const { user } = useAuth();
+  const adminEmails = (process.env.REACT_APP_ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
+  
   if (!user) return <Navigate to="/login" />;
-  if (!MERCHANT_EMAILS.includes(user.email)) return <Navigate to="/dashboard" />;
+  if (!adminEmails.includes(user.email)) return <Navigate to="/dashboard" />;
+  
   return children;
 }
 

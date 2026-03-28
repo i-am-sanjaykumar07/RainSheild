@@ -13,15 +13,22 @@ router.post('/start', auth, async (req, res) => {
     const { umbrellaId } = req.body;
     
     const user = await User.findById(req.user._id);
-    const isAdmin = ['palisettysanjaykumar@gmail.com', 'sanjay@cu.edu.in'].includes(user.email);
+    const adminEmails = (process.env.ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
+    const isAdmin = adminEmails.includes(user.email);
     
     if (!user.depositMade && !isAdmin) {
       return res.status(400).json({ message: 'Please make initial deposit first' });
     }
 
-    const umbrella = await Umbrella.findById(umbrellaId);
-    if (!umbrella || !umbrella.isAvailable) {
-      return res.status(400).json({ message: 'Umbrella not available' });
+    // Atomic lock to prevent race conditions
+    const umbrella = await Umbrella.findOneAndUpdate(
+      { _id: umbrellaId, isAvailable: true },
+      { isAvailable: false },
+      { new: true }
+    );
+
+    if (!umbrella) {
+      return res.status(400).json({ message: 'Umbrella is no longer available' });
     }
 
     const rental = new Rental({
@@ -31,7 +38,6 @@ router.post('/start', auth, async (req, res) => {
     
     await rental.save();
     
-    umbrella.isAvailable = false;
     umbrella.currentRental = rental._id;
     await umbrella.save();
     
@@ -61,23 +67,37 @@ router.post('/start-multiple', auth, async (req, res) => {
     const { umbrellaIds } = req.body;
     
     const user = await User.findById(req.user._id);
-    const isAdmin = ['palisettysanjaykumar@gmail.com', 'sanjay@cu.edu.in'].includes(user.email);
+    const adminEmails = (process.env.ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
+    const isAdmin = adminEmails.includes(user.email);
     
     if (!user.depositMade && !isAdmin) {
       return res.status(400).json({ message: 'Please make initial deposit first' });
     }
 
-    const umbrellas = await Umbrella.find({ 
-      _id: { $in: umbrellaIds }, 
-      isAvailable: true 
-    });
-    
-    if (umbrellas.length !== umbrellaIds.length) {
-      return res.status(400).json({ message: 'Some umbrellas are not available' });
+    const lockedUmbrellas = [];
+    try {
+      // Loop and atomically lock each umbrella
+      for (const uId of umbrellaIds) {
+        const umbrella = await Umbrella.findOneAndUpdate(
+          { _id: uId, isAvailable: true },
+          { isAvailable: false },
+          { new: true }
+        );
+        if (!umbrella) {
+          throw new Error('Umbrella unavailable');
+        }
+        lockedUmbrellas.push(umbrella);
+      }
+    } catch (error) {
+      // Rollback if any single umbrella was snatched by another user
+      for (const umbrella of lockedUmbrellas) {
+        await Umbrella.findByIdAndUpdate(umbrella._id, { isAvailable: true });
+      }
+      return res.status(400).json({ message: 'One or more selected umbrellas were just taken. Please refresh and try again.' });
     }
 
     const rentals = [];
-    for (const umbrella of umbrellas) {
+    for (const umbrella of lockedUmbrellas) {
       const rental = new Rental({
         user: user._id,
         umbrella: umbrella._id
@@ -85,7 +105,6 @@ router.post('/start-multiple', auth, async (req, res) => {
       await rental.save();
       rentals.push(rental);
       
-      umbrella.isAvailable = false;
       umbrella.currentRental = rental._id;
       await umbrella.save();
     }

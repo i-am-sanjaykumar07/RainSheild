@@ -79,7 +79,8 @@ router.get('/profile', auth, async (req, res) => {
     const user = await User.findById(req.user._id).populate('rentalHistory');
     
     // Auto-approve and credit admins for seamless testing
-    if (['palisettysanjaykumar@gmail.com', 'sanjay@cu.edu.in'].includes(user.email)) {
+    const adminEmails = (process.env.ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
+    if (adminEmails.includes(user.email)) {
       if (!user.depositMade) {
         user.depositMade = true;
         user.walletBalance = (user.walletBalance || 0) + 400; // Provide starting funds

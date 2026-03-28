@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const processUser = (userData) => {
     // Admin users completely bypass the deposit requirement
-    const adminEmails = ['palisettysanjaykumar@gmail.com', 'sanjay@cu.edu.in'];
+    const adminEmails = (process.env.REACT_APP_ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
     if (userData && adminEmails.includes(userData.email)) {
       userData.depositMade = true;
     }

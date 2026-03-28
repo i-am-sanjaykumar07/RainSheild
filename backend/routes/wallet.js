@@ -47,7 +47,6 @@ router.post('/verify-deposit', auth, async (req, res) => {
     // Mark account as active on any deposit
     if (!user.depositMade) {
       user.depositMade = true;
-      user.depositAmount = 100; // ₹100 refundable deposit held until umbrella is returned
     }
 
     // ₹100 cashback only on first deposit ≥ ₹300 (and not already received)
