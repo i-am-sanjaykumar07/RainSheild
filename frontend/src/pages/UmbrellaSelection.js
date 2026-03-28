@@ -166,14 +166,44 @@ const UmbrellaSelection = () => {
 
         {/* Selection Bar */}
         {totalSelected > 0 && (
-          <div className="card mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-brand-200 bg-brand-50 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-lg font-bold text-brand-700">{totalSelected}</span>
-              <span className="text-sm text-brand-700">umbrella{totalSelected !== 1 ? 's' : ''} selected</span>
+          <div className="card mb-4 border-brand-200 bg-brand-50 animate-fade-in">
+            {/* Header row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg font-bold text-brand-700">{totalSelected}</span>
+                <span className="text-sm text-brand-700 font-medium">umbrella{totalSelected !== 1 ? 's' : ''} selected</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={clearSelection} className="btn-ghost text-sm">Clear All</button>
+                <button onClick={handleRent} className="btn-success">Rent Selected</button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={clearSelection} className="btn-ghost text-sm">Clear</button>
-              <button onClick={handleRent} className="btn-success">Rent Selected</button>
+            {/* Individual chips — one per selected umbrella */}
+            <div className="flex flex-wrap gap-2">
+              {selectedUmbrellas.map((id) => {
+                const umb = umbrellas.find((u) => u._id === id);
+                if (!umb) return null;
+                const colorHex = colorConfig.find((c) => c.key === umb.color)?.hex || '#6366f1';
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium bg-white border border-brand-200 text-brand-800 shadow-sm"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: colorHex }}
+                    />
+                    {umb.umbrellaId}
+                    <button
+                      onClick={() => setSelectedUmbrellas((prev) => prev.filter((i) => i !== id))}
+                      className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full text-brand-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title={`Remove ${umb.umbrellaId}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
