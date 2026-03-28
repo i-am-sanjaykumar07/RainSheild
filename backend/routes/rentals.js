@@ -303,40 +303,11 @@ router.post('/end-multiple', auth, async (req, res) => {
       }
     }
 
-    // 💰 Refund deposit once for the entire batch return
-    const refundAmount = user.depositAmount || 100;
-    user.walletBalance += refundAmount;
-    user.depositAmount = 0;    // deposit returned
-    user.depositMade = false;  // must re-deposit for next rental session
     await user.save();
-
-    // Record refund transaction
-    const refundTx = await new Transaction({
-      user: user._id,
-      type: 'refund',
-      amount: refundAmount,
-      description: `Deposit refund for returning ${updatedRentals.length} umbrella(s)`
-    }).save();
-
-    // Emit wallet update
-    if (global.io) {
-      global.io.emit('newTransaction', {
-        id: refundTx._id,
-        type: refundTx.type,
-        amount: refundTx.amount,
-        user: user.email,
-        createdAt: refundTx.createdAt
-      });
-      global.io.emit('walletUpdate', {
-        userId: user._id,
-        newBalance: user.walletBalance
-      });
-    }
 
     res.json({ 
       message: `Successfully dropped off ${updatedRentals.length} umbrellas`,
       rentals: updatedRentals,
-      refundAmount,
       walletBalance: user.walletBalance
     });
   } catch (error) {
@@ -363,24 +334,10 @@ router.post('/:id/end', auth, async (req, res) => {
     
     await rental.save();
 
-    // Update user rental history & refund deposit
+    // Update user rental history
     const user = await User.findById(rental.user._id);
     user.rentalHistory.push(rental._id);
-
-    // 💰 Refund deposit back to wallet
-    const refundAmount = user.depositAmount || 100;
-    user.walletBalance += refundAmount;
-    user.depositAmount = 0;    // deposit returned
-    user.depositMade = false;  // must re-deposit for next rental session
     await user.save();
-
-    // Record refund transaction
-    const refundTx = await new Transaction({
-      user: user._id,
-      type: 'refund',
-      amount: refundAmount,
-      description: `Deposit refund for returning umbrella ${rental.umbrella.umbrellaId}`
-    }).save();
 
     // Update umbrella location and availability
     const umbrella = await Umbrella.findById(rental.umbrella._id);
@@ -394,7 +351,7 @@ router.post('/:id/end', auth, async (req, res) => {
     umbrella.isAvailable = true;
     umbrella.currentRental = null;
     await umbrella.save();
-    
+
     // Emit real-time updates
     if (global.io) {
       global.io.emit('rentalEnded', {
@@ -408,22 +365,10 @@ router.post('/:id/end', auth, async (req, res) => {
         isAvailable: true,
         location: umbrella.location
       });
-      global.io.emit('newTransaction', {
-        id: refundTx._id,
-        type: refundTx.type,
-        amount: refundTx.amount,
-        user: user.email,
-        createdAt: refundTx.createdAt
-      });
-      global.io.emit('walletUpdate', {
-        userId: user._id,
-        newBalance: user.walletBalance
-      });
     }
 
-    res.json({ 
+    res.json({
       rental,
-      refundAmount,
       walletBalance: user.walletBalance,
       invoice: {
         umbrellaId: rental.umbrella.umbrellaId,
@@ -491,34 +436,12 @@ router.post('/:id/cancel', auth, async (req, res) => {
     // Remove the rental record entirely
     await Rental.findByIdAndDelete(rental._id);
 
-    // Check if the user has any remaining active rentals
+    // Check remaining active rentals (for UI state)
     const user = await User.findById(req.user._id);
     const remainingActive = await Rental.countDocuments({ user: user._id, isActive: true });
 
-    let refundAmount = 0;
-    if (remainingActive === 0 && user.depositMade) {
-      // Last rental cancelled — refund the deposit
-      refundAmount = user.depositAmount || 100;
-      user.walletBalance += refundAmount;
-      user.depositAmount = 0;
-      user.depositMade = false;
-      await user.save();
-
-      await new Transaction({
-        user: user._id,
-        type: 'refund',
-        amount: refundAmount,
-        description: 'Deposit refund — rental cancelled before payment'
-      }).save();
-
-      if (global.io) {
-        global.io.emit('walletUpdate', { userId: user._id, newBalance: user.walletBalance });
-      }
-    }
-
     res.json({
       message: 'Rental cancelled successfully.',
-      refundAmount,
       walletBalance: user.walletBalance,
       remainingActive
     });

@@ -115,7 +115,7 @@ const RentalTracking = () => {
       setActiveRentals(remaining);
       setSelectedRental(remaining.length > 0 ? remaining[0] : null);
       if (response.data.walletBalance !== undefined) {
-        updateUser({ walletBalance: response.data.walletBalance, depositMade: response.data.remainingActive > 0 });
+        updateUser({ walletBalance: response.data.walletBalance });
       }
       if (remaining.length === 0) navigate('/dashboard');
     } catch (err) {
