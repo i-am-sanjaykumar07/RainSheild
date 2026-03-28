@@ -315,13 +315,20 @@ const RentalTracking = () => {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="card text-center">
             <p className="section-label mb-2">Duration</p>
-            <p className="font-mono text-2xl md:text-3xl font-bold text-surface-900">
-              {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
-              <span className="text-surface-400 text-lg">:{String(seconds).padStart(2, '0')}</span>
-            </p>
+            {selectedRental?.unlocked ? (
+              <p className="font-mono text-2xl md:text-3xl font-bold text-surface-900">
+                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
+                <span className="text-surface-400 text-lg">:{String(seconds).padStart(2, '0')}</span>
+              </p>
+            ) : (
+              <div>
+                <p className="font-mono text-2xl md:text-3xl font-bold text-surface-400">—</p>
+                <p className="text-xs text-amber-500 font-medium mt-1">Pay to start</p>
+              </div>
+            )}
           </div>
           <div className="card text-center">
-            <p className="section-label mb-2">Current Cost</p>
+            <p className="section-label mb-2">{selectedRental?.unlocked ? 'Amount Paid' : 'Starting From'}</p>
             <p className="font-mono text-2xl md:text-3xl font-bold text-surface-900">₹{cost}</p>
           </div>
           <div className="card text-center">

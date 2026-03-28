@@ -18,7 +18,6 @@ const transactionSchema = new mongoose.Schema({
   withdrawalStatus: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'rejected'],
-    default: null
   },
   withdrawalNote: { type: String } // merchant can add a note (e.g. UTR number)
 }, { timestamps: true });
