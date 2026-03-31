@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const umbrellaRoutes = require('./routes/umbrellas');
 const rentalRoutes = require('./routes/rentals');
+const walletRoutes = require('./routes/wallet');
 
 const app = express();
 const server = createServer(app);
@@ -46,6 +47,7 @@ io.on('connection', (socket) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/umbrellas', umbrellaRoutes);
 app.use('/api/rentals', rentalRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // Keep-alive: pinged every 5 min by UptimeRobot to prevent Railway cold starts
 app.get('/health', (req, res) => {

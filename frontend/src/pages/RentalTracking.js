@@ -92,66 +92,36 @@ const RentalTracking = () => {
 
   const handlePayment = async (isBulk) => {
     if (paymentLoading) return;
+    
+    const cost = isBulk ? getTotalUnpaidCost() : getCost();
+    const balance = user?.walletBalance || 0;
+
+    if (balance < cost) {
+      if (window.confirm(`Insufficient balance (₹${balance}). Top up ₹${Math.max(300, cost - balance)} now?`)) {
+        navigate('/wallet', { state: { autoAmount: Math.max(300, cost - balance) } });
+      }
+      return;
+    }
+
+    if (!window.confirm(`Confirm payment of ₹${cost} from your wallet?`)) return;
+
     setPaymentLoading(true);
-
     try {
-      const rentalIds = isBulk 
-        ? activeRentals.filter(r => !r.unlocked).map(r => r._id)
-        : [selectedRental._id];
-
-      // 1. Create order on backend
-      const { data: order } = await api.post('/rentals/create-payment-order', { rentalIds });
+      if (isBulk) {
+        await api.post('/rentals/pay-all');
+      } else {
+        await api.post(`/rentals/${selectedRental._id}/pay`);
+      }
       
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_live_SVlA2VxGM7X1gi',
-        amount: order.amount,
-        currency: "INR",
-        name: "RainShield",
-        description: `Direct Rental Payment (${rentalIds.length} umbrella${rentalIds.length > 1 ? 's' : ''})`,
-        order_id: order.orderId,
-        handler: async function (response) {
-          try {
-            // 2. Verify payment on backend
-            await api.post('/rentals/verify-payment', {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              rentalIds
-            });
-            
-            // 3. Update local state
-            const now = new Date().toISOString();
-            setActiveRentals(prev => prev.map(r => 
-              rentalIds.includes(r._id) 
-                ? { ...r, unlocked: true, paymentStatus: 'completed', unlockedAt: now } 
-                : r
-            ));
-
-            if (selectedRental && rentalIds.includes(selectedRental._id)) {
-              setSelectedRental(prev => ({ ...prev, unlocked: true, paymentStatus: 'completed', unlockedAt: now }));
-            }
-
-            alert('Payment successful! Umbrellas unlocked.');
-          } catch (err) {
-            alert('Payment verification failed.');
-          } finally {
-            setPaymentLoading(false);
-          }
-        },
-        prefill: {
-          name: user?.name,
-          email: user?.email,
-        },
-        theme: { color: "#4f46e5" }
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function () {
-        alert("Payment Failed");
-        setPaymentLoading(false);
-      });
-      rzp.open();
+      // Refresh user data (balance) and rentals
+      const profileRes = await api.get('/auth/profile');
+      updateUser(profileRes.data.user);
+      await fetchActiveRentals();
+      
+      alert('Payment successful! Umbrella unlocked.');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to initiate payment.');
+      alert(err.response?.data?.message || 'Payment failed');
+    } finally {
       setPaymentLoading(false);
     }
   };

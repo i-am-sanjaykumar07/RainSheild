@@ -194,6 +194,25 @@ const Profile = () => {
 
           {/* Sidebar */}
           <div className="space-y-4">
+            {/* Wallet Info */}
+            <div className="card">
+              <p className="section-label mb-2">Wallet Balance</p>
+              <p className="stat-value text-surface-900 mb-3">₹{user?.walletBalance || 0}</p>
+              <div className="mt-2 mb-4">
+                <span className={`badge ${user?.depositMade ? 'badge-success' : 'badge-warning'}`}>
+                  {user?.depositMade ? 'Active' : 'Pending Deposit'}
+                </span>
+                {user?.cashbackReceived && (
+                  <div className="mt-2 text-[10px] text-brand-600 font-semibold uppercase tracking-wider">
+                    Cashback Bonus Applied
+                  </div>
+                )}
+              </div>
+              <button onClick={() => navigate('/wallet')} className="btn-secondary btn-full text-sm">
+                View Wallet
+              </button>
+            </div>
+
             {/* Activity */}
             <div className="card">
               <p className="section-label mb-2">Total Rentals</p>

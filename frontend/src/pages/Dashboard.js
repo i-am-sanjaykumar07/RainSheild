@@ -33,7 +33,7 @@ const Dashboard = () => {
     fetchRentalHistory();
   }, [fetchActiveRentals, fetchRentalHistory]);
 
-  // Removal: const needsDeposit = !user?.depositMade;
+  const needsDeposit = !user?.depositMade;
 
   return (
     <div className="page-container">
@@ -45,11 +45,36 @@ const Dashboard = () => {
           <p className="page-subtitle">Welcome back, {user?.email?.split('@')[0] || 'there'}</p>
         </div>
 
-        {/* Removal: needsDeposit banner */}
+        {/* Deposit Banner */}
+        {needsDeposit && (
+          <div className="card mb-6 border-amber-200 bg-amber-50 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-amber-900 text-sm">Initial Deposit Required</h3>
+                <p className="text-amber-700 text-sm mt-0.5">
+                  Add ₹300 to your wallet and receive a ₹100 cashback bonus.
+                </p>
+              </div>
+              <button
+                className="btn-primary whitespace-nowrap"
+                onClick={() => navigate('/wallet')}
+              >
+                Add Deposit
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Removal: Wallet Card */}
+          {/* Wallet */}
+          <div className="card-interactive" onClick={() => navigate('/wallet')}>
+            <p className="section-label mb-2">Wallet Balance</p>
+            <p className="stat-value text-surface-900">
+              ₹{user?.walletBalance || 0}
+            </p>
+            <p className="text-xs text-surface-400 mt-2">Tap to add money →</p>
+          </div>
 
           {/* Active Rentals */}
           <div className="card-interactive" onClick={() => navigate('/tracking')}>
@@ -75,10 +100,13 @@ const Dashboard = () => {
           <div className="card">
             <p className="section-label mb-2">Account Status</p>
             <div className="mt-1">
-              <span className="badge badge-success">
-                Active
+              <span className={`badge ${user?.depositMade ? 'badge-success' : 'badge-warning'}`}>
+                {user?.depositMade ? 'Active' : 'Pending Deposit'}
               </span>
             </div>
+            {user?.cashbackReceived && (
+              <span className="badge badge-brand mt-2">Cashback Received</span>
+            )}
           </div>
         </div>
 
@@ -90,9 +118,16 @@ const Dashboard = () => {
             <div className="space-y-2">
               <button
                 onClick={() => navigate('/umbrellas')}
+                disabled={needsDeposit}
                 className="btn-success btn-full justify-start"
               >
                 <span>☂</span> Browse Umbrellas
+              </button>
+              <button
+                onClick={() => navigate('/wallet')}
+                className="btn-secondary btn-full justify-start"
+              >
+                <span>+</span> Add Money
               </button>
               <button
                 onClick={() => navigate('/tracking')}
@@ -115,9 +150,13 @@ const Dashboard = () => {
                 <span className="text-sm text-surface-600">Daily Cap</span>
                 <span className="font-mono font-semibold text-surface-900">₹70/day</span>
               </div>
+              <div className="flex items-center justify-between py-2 border-b border-surface-100">
+                <span className="text-sm text-surface-600">Min. Deposit</span>
+                <span className="font-mono font-semibold text-surface-900">₹300</span>
+              </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-surface-600">Minimum Charge</span>
-                <span className="font-mono font-semibold text-surface-900">₹7</span>
+                <span className="text-sm text-surface-600">First Deposit Bonus</span>
+                <span className="font-mono font-semibold text-emerald-600">+₹100</span>
               </div>
             </div>
           </div>
