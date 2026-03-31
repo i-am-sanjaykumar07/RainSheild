@@ -10,6 +10,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [remarks, setRemarks] = useState({}); // { withdrawalId: "text" }
   const [message, setMessage] = useState({ type: '', text: '' });
 
   const fetchWithdrawals = useCallback(async () => {
@@ -28,16 +29,34 @@ const Admin = () => {
   }, [fetchWithdrawals]);
 
   const handleAction = async (id, action) => {
-    const note = action === 'rejected' ? window.prompt('Reason for rejection:') : 'Processed via platform';
-    if (action === 'rejected' && note === null) return;
+    const note = remarks[id] || 'Processed via platform';
+    
+    // Validating required remarks for rejection if necessary (optional - usually desired)
+    if (action === 'reject' && !remarks[id]) {
+        if (!window.confirm('No reason provided for rejection. Continue?')) return;
+    }
 
     try {
-      await api.post(`/wallet/withdrawals/${id}/action`, { action, note });
-      setMessage({ type: 'success', text: `Withdrawal ${action} successfully.` });
+      const endpoint = action === 'completed' ? `/wallet/withdrawals/${id}/complete` : `/wallet/withdrawals/${id}/reject`;
+      await api.post(endpoint, { note });
+      
+      setMessage({ type: 'success', text: `Withdrawal marked as ${action} successfully.` });
+      
+      // Clear remark for this row
+      setRemarks(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
+
       fetchWithdrawals();
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Action failed.' });
     }
+  };
+
+  const handleRemarkChange = (id, value) => {
+    setRemarks(prev => ({ ...prev, [id]: value }));
   };
 
   return (
@@ -89,7 +108,7 @@ const Admin = () => {
                       <th className="text-left px-4 py-3 font-semibold text-surface-600">User & Method</th>
                       <th className="text-left px-4 py-3 font-semibold text-surface-600">Details</th>
                       <th className="text-right px-4 py-3 font-semibold text-surface-600">Amount</th>
-                      <th className="text-center px-4 py-3 font-semibold text-surface-600">Actions</th>
+                      <th className="text-center px-4 py-3 font-semibold text-surface-600">Remarks / Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -113,22 +132,31 @@ const Admin = () => {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-right">
-                          <p className="font-mono text-base font-bold text-surface-900">₹{w.amount}</p>
+                          <p className="font-mono text-base font-bold text-surface-900">₹{Math.abs(w.amount)}</p>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleAction(w._id, 'completed')}
-                              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleAction(w._id, 'rejected')}
-                              className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50"
-                            >
-                              Reject
-                            </button>
+                          <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
+                            <input
+                              type="text"
+                              placeholder="Tx ID or Reason"
+                              className="px-3 py-1.5 text-xs border border-surface-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                              value={remarks[w._id] || ''}
+                              onChange={(e) => handleRemarkChange(w._id, e.target.value)}
+                            />
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleAction(w._id, 'completed')}
+                                className="flex-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleAction(w._id, 'rejected')}
+                                className="flex-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>

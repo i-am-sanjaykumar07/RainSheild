@@ -15,7 +15,8 @@ const transactionSchema = new mongoose.Schema({
     accountNumber: { type: String },
     ifscCode: { type: String }
   },
-  note: { type: String } // For reference IDs, rejection reasons, etc.
+  note: { type: String }, // For legacy reference
+  withdrawalNote: { type: String } // For reference IDs, rejection reasons, etc.
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
