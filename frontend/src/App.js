@@ -5,12 +5,12 @@ import SplashScreen from './components/SplashScreen';
 import loadGoogleMapsAPI from './utils/loadGoogleMaps';
 import { AuthProvider, useAuth } from './services/AuthContext';
 
-const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const UmbrellaSelection = lazy(() => import('./pages/UmbrellaSelection'));
-const RentalTracking = lazy(() => import('./pages/RentalTracking'));
-const Wallet = lazy(() => import('./pages/Wallet'));
-const Profile = lazy(() => import('./pages/Profile'));
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import UmbrellaSelection from './pages/UmbrellaSelection';
+import RentalTracking from './pages/RentalTracking';
+import Wallet from './pages/Wallet';
+import Profile from './pages/Profile';
 const Admin = lazy(() => import('./pages/Admin'));
 
 function App() {

@@ -25,6 +25,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const cachedUser = localStorage.getItem('user');
+    
+    if (cachedUser) {
+      setUser(JSON.parse(cachedUser));
+      setLoading(false); // Immediate UI with cached data
+    }
+
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchProfile();
@@ -36,9 +43,12 @@ export const AuthProvider = ({ children }) => {
   const fetchProfile = async () => {
     try {
       const response = await api.get('/auth/profile');
-      setUser(processUser(response.data.user));
+      const processed = processUser(response.data.user);
+      setUser(processed);
+      localStorage.setItem('user', JSON.stringify(processed)); // Update cache
     } catch (error) {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       delete api.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
@@ -55,6 +65,7 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       const processedUser = processUser(user);
+      localStorage.setItem('user', JSON.stringify(processedUser)); // Cache user
       setUser(processedUser);
       return processedUser;
     } catch (error) {
@@ -71,18 +82,24 @@ export const AuthProvider = ({ children }) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     const processedUser = processUser(user);
+    localStorage.setItem('user', JSON.stringify(processedUser)); // Cache user
     setUser(processedUser);
     return processedUser;
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // Clear cache
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
   const updateUser = (userData) => {
-    setUser(prev => ({ ...prev, ...userData }));
+    setUser(prev => {
+      const updated = { ...prev, ...userData };
+      localStorage.setItem('user', JSON.stringify(updated)); // Update cache
+      return updated;
+    });
   };
 
   const value = {

@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('Login attempt:', email);
     
-    const user = await User.findOne({ email }).populate('rentalHistory');
+    const user = await User.findOne({ email });
     console.log('User found:', !!user);
     
     if (!user) {
@@ -75,7 +75,7 @@ router.post('/login', async (req, res) => {
 
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('rentalHistory');
+    const user = await User.findById(req.user._id);
     // Auto-approve and credit admins for seamless testing
     const adminEmails = (process.env.ADMIN_EMAILS || 'palisettysanjaykumar@gmail.com,sanjay@cu.edu.in').split(',');
     if (adminEmails.includes(user.email)) {
